@@ -1,0 +1,7 @@
+com/example/App.class
+example/avro/FooRecord$Builder.class
+example/avro/FooRecord.class
+example/avro/ReceiptRecord$Builder.class
+com/example/ReceiptApp.class
+com/example/Signer.class
+example/avro/ReceiptRecord.class

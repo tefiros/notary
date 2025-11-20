@@ -1,0 +1,747 @@
+confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.0.0 
+
+curl -L -o /usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc/postgresql-42.2.18.jar https://jdbc.postgresql.org/download/postgresql-42.2.18.jar
+
+
+confluent-hub install jcustenborder/kafka-connect-transform-common:latest
+
+
+ARRANCAR DOCKER
+
+
+CONNECTORS
+curl http://localhost:8083/connectors/ | jq
+
+VER KSQLDB
+docker exec -it ksqldb ksql http://ksqldb:8088
+
+VER SCHEMAREGISTRY
+curl http://localhost:8081/subjects
+
+VER TABLA POSTGREST RECEIPT
+docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+SELECT * FROM "RECEIPT_01"; \q
+
+
+ 989  ls
+  990  wget https://repo1.maven.org/maven2/com/h2database/h2/2.2.224/h2-2.2.224.jar
+  991  cp h2-2.2.224.jar ~/kafka/plugins/confluentinc-kafka-connect-jdbc/lib/
+  992  cd..
+
+  999  cd config/
+ 1000  ls
+ 1001  nano connect-file-sink.properties
+ 1002  nano jdbc-sink-postgres.properties
+ 1003  ls
+ 1004  kafka-topics --create --topic _confluent-command --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+ 1005  ./bin/connect-standalone.sh config/connect-standalone.properties config/jdbc-sink-postgres.properties
+ 1006  cd ..
+ 1007  ./bin/connect-standalone.sh config/connect-standalone.properties config/jdbc-sink-postgres.properties
+ 1008  ls
+ 1009  cd bin
+ 1010  ls
+ 1011  nano connect-standalone.sh
+ 1012  nano connect-standalone
+ 1013  cd ..
+ 1014  ./gradlew clean assemble
+ 1015  ./gradlew clean assemble --stacktrace
+ 1016  ./bin/connect-standalone.sh config/connect-standalone.properties config/jdbc-sink-postgres.properties
+ 1017  ls
+ 1018  cd config/
+ 1019  nano connect-standalone.properties
+ 1020  cd ..
+ 1021  ./bin/connect-standalone.sh config/connect-standalone.properties config/jdbc-sink-postgres.properties
+ 1022  ls ~/kafka/share/java
+ 1023  cd share
+ 1024  ls
+ 1025  mkdir -p share/java
+ 1026  cp core/build/libs/*.jar share/java/
+ 1027  cp connect/build/libs/*.jar share/java/
+ 1028  cp libs/*.jar share/java/  # si hay dependencias
+ 1029  mkdir -p share/java
+ 1030  cp core/build/libs/*.jar share/java/
+ 1031  cp connect/build/libs/*.jar share/java/
+ 1032  cp libs/*.jar share/java/
+ 1033  bin/connect-standalone.sh config/connect-standalone.properties config/connect-file-source.properties
+ 1034  pkill -f connect-standalone
+ 1035  rm -rf /tmp/connect.offsets
+ 1036  rm -rf /tmp/connect.state
+ 1037  rm -rf /tmp/connect.log*
+ 1038  cd ..
+ 1039  l
+ 1040  rm -rf postgresql-42.6.0.jar
+ 1041  wget https://downloads.apache.org/kafka/7.5.0/kafka_2.13-7.5.0.tgz
+ 1042  tar -xzf kafka_2.13-7.5.0.tgz
+ 1043  cd kafka_2.13-7.5.0
+ 1044  wget https://downloads.apache.org/kafka/7.5.0/kafka_2.13-7.5.0.tgz
+ 1045  ls
+ 1046  cd kafka
+ 1047  ls
+ 1048  cd config/
+ 1049  ls
+ 1050  nano jdbc-sink-postgres.properties
+ 1051  nano connect-standalone.properties
+ 1052  cd ..
+ 1053  cd config/
+ 1054  nano connect-standalone.properties
+ 1055  ./bin/connect-standalone.sh config/connect-standalone.properties config/jdbc-sink-postgres.properties
+ 1056  cd ..
+ 1057  ./bin/connect-standalone.sh config/connect-standalone.properties config/jdbc-sink-postgres.properties
+ 1058  ./bin/kafka-console-producer.sh --broker-list localhost:9092 --topic mi_tema <<EOF
+ 1059  {"id": 1, "nombre": "Alice"}
+ 1060  {"id": 2, "nombre": "Bob"}
+ 1061  EOF
+ 1062  cd kafka
+ 1063  ./bin/kafka-console-producer.sh --broker-list localhost:9092 --topic mi_tema <<EOF
+ 1064  {"id": 1, "nombre": "Alice"}
+ 1065  {"id": 2, "nombre": "Bob"}
+ 1066  EOF
+ 1067  docker exec -it postgres-test psql -U postgres -d mibase
+ 1068  ./bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+ 1069  ./bin/kafka-topics.sh --bootstrap-server localhost:9092 --topic mi_tema --describe
+ 1070  ./bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic mi_tema --from-beginning
+ 1071  ./bin/kafka-console-producer.sh --broker-list localhost:9092 --topic mi_tema
+ 1072  {"id": 3, "nombre": "Charlie"}
+ 1073  {"id": 4, "nombre": "Diana"}
+ 1074  ecit
+ 1075  docker exec -it postgres-test psql -U postgres -d mibase
+ 1076  ./bin/kafka-console-producer.sh --broker-list localhost:9092 --topic mi_tema
+ 1077  docker exec -it postgres-test psql -U postgres -d mibase
+ 1078  ls
+ 1079  cd config/
+ 1080  ls
+ 1081  nano jdbc-sink-postgres.properties
+ 1082  cat jdbc-sink-postgres.properties
+ 1083  nano jdbc-sink-postgres.properties
+ 1084  docker exec -it postgres-test psql -U postgres -d mibase
+ 1085  nano docker-compose.yaml
+ 1086  nano docker-compose.yml
+ 1087  ls
+ 1088  rm -rf docker-compose.yaml
+ 1089  ls
+ 1090  mkdir -p plugins
+ 1091  ls
+ 1092  curl -L https://packages.confluent.io/maven/io/confluent/kafka-connect-jdbc/10.7.4/kafka-connect-jdbc-10.7.4.jar      -o plugins/kafka-connect-jdbc-10.7.4.jar
+ 1093  ls
+ 1094  cd plugins/
+ 1095  ls
+ 1096  cd ..
+ 1097  docker-compose up -d
+ 1098  docker ps
+ 1099  kafka-topics.sh --bootstrap-server localhost:9092 --create --topic test --partitions 1 --replication-factor 1
+ 1100  kafka
+ 1101  wget https://archive.apache.org/dist/kafka/3.7.0/kafka_2.13-3.7.0.tgz
+ 1102  kafka-console-producer --bootstrap-server localhost:9092 --list
+ 1103  kafka-topics --list --bootstrap-server localhost:9092
+ 1104  ls
+ 1105  rm -rf kafka_2.13-3.7.0.tgz
+ 1106  kafka-console-producer.sh --bootstrap-server localhost:9092 --topic test --property value.serializer=org.apache.kafka.common.serialization.StringSerializer
+ 1107  kafka-console-producer --bootstrap-server localhost:9092 --topic test --property value.serializer=org.apache.kafka.common.serialization.StringSerializer
+ 1108  curl -X POST http://localhost:8083/connectors   -H "Content-Type: application/json"   -d '{
+ 1109      "name": "postgres-users-json-sink",
+ 1110      "config": {
+ 1111        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1112        "tasks.max": "1",
+ 1113        "topics": "users-json",
+ 1114        "connection.url": "jdbc:postgresql://postgres:5432/kafkadb",
+ 1115        "connection.user": "kafka",
+ 1116        "connection.password": "kafka",
+ 1117        "auto.create": "true",
+ 1118        "auto.evolve": "true",
+ 1119        "insert.mode": "upsert",
+ 1120        "pk.mode": "record_value",
+ 1121        "pk.fields": "id",
+ 1122        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+ 1123        "value.converter.schemas.enable": "false"
+ 1124      }
+ 1125    }'
+ 1126  docker exec -it postgres psql -U kafka -d kafkadb
+ 1127  curl -X POST http://localhost:8083/connectors   -H "Content-Type: application/json"   -d '{
+ 1128      "name": "postgres-users-json-sink",
+ 1129      "config": {
+ 1130        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1131        "tasks.max": "1",
+ 1132        "topics": "test",
+ 1133        "connection.url": "jdbc:postgresql://postgres:5432/kafkadb",
+ 1134        "connection.user": "kafka",
+ 1135        "connection.password": "kafka",
+ 1136        "auto.create": "true",
+ 1137        "auto.evolve": "true",
+ 1138        "insert.mode": "upsert",
+ 1139        "pk.mode": "record_value",
+ 1140        "pk.fields": "id",
+ 1141        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+ 1142        "value.converter.schemas.enable": "false"
+ 1143      }
+ 1144    }'
+ 1145  curl -X PUT http://localhost:8083/connectors/postgres-users-json-sink/config   -H "Content-Type: application/json"   -d '{
+ 1146      "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1147      "tasks.max": "1",
+ 1148      "topics": "test",
+ 1149      "connection.url": "jdbc:postgresql://postgres:5432/kafkadb",
+ 1150      "connection.user": "kafka",
+ 1151      "connection.password": "kafka",
+ 1152      "auto.create": "true",
+ 1153      "auto.evolve": "true",
+ 1154      "insert.mode": "upsert",
+ 1155      "pk.mode": "record_value",
+ 1156      "pk.fields": "id",
+ 1157      "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+ 1158      "value.converter.schemas.enable": "false"
+ 1159    }'
+ 1160  curl http://localhost:8083/connectors
+ 1161  docker exec -it postgres psql -U kafka -d kafkadb
+ 1162  kafka-console-consumer --bootstrap-server localhost:9092 --topic test --from-beginning
+ 1163  curl http://localhost:8083/connectors/postgres-users-json-sink/config | jq
+ 1164  docker logs kafka-connect -f
+ 1165  ls
+ 1166  mkdir -p ./kafka-connect-jars
+ 1167  cd ./kafka-connect-jars
+ 1168  wget https://jdbc.postgresql.org/download/postgresql-42.7.4.jar
+ 1169  cd ..
+ 1170  nano docker-compose.yml
+ 1171  ls
+ 1172  cd plugins/
+ 1173  ls
+ 1174  wget https://jdbc.postgresql.org/download/postgresql-42.7.4.jar
+ 1175  ls
+ 1176  docker-compose stop kafka-connect
+ 1177  cd ..
+ 1178  docker-compose up -d kafka-connect
+ 1179  docker exec -it kafka-connect ls /etc/kafka-connect/jars
+ 1180  curl -X DELETE http://localhost:8083/connectors/postgres-users-json-sink
+ 1181  curl -X PUT http://localhost:8083/connectors/postgres-users-json-sink/config   -H "Content-Type: application/json"   -d '{
+ 1182      "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1183      "tasks.max": "1",
+ 1184      "topics": "test",
+ 1185      "connection.url": "jdbc:postgresql://postgres:5432/kafkadb",
+ 1186      "connection.user": "kafka",
+ 1187      "connection.password": "kafka",
+ 1188      "auto.create": "true",
+ 1189      "auto.evolve": "true",
+ 1190      "insert.mode": "upsert",
+ 1191      "pk.mode": "record_value",
+ 1192      "pk.fields": "id",
+ 1193      "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+ 1194      "value.converter.schemas.enable": "false"
+ 1195    }'
+ 1196  docker exec -it postgres psql -U kafka -d kafkadb -c "SELECT * FROM test;"
+ 1197  docker logs kafka-connect -f
+ 1198  curl -X POST http://localhost:8083/connectors   -H "Content-Type: application/json"   -d '{
+ 1199      "name": "postgres-users-json-sink",
+ 1200      "config": {
+ 1201        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1202        "tasks.max": "1",
+ 1203        "topics": "test",
+ 1204        "connection.url": "jdbc:postgresql://postgres:5432/kafkadb",
+ 1205        "connection.user": "kafka",
+ 1206        "connection.password": "kafka",
+ 1207        "auto.create": "true",
+ 1208        "auto.evolve": "true",
+ 1209        "insert.mode": "upsert",
+ 1210        "pk.mode": "record_value",
+ 1211        "pk.fields": "id",
+ 1212        "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+ 1213        "key.converter.schemas.enable": "false",
+ 1214        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+ 1215        "value.converter.schemas.enable": "false"
+ 1216      }
+ 1217    }'
+ 1218  curl -X DELETE http://localhost:8083/connectors/postgres-users-json-sink
+ 1219  curl -X POST http://localhost:8083/connectors   -H "Content-Type: application/json"   -d '{
+ 1220      "name": "postgres-users-json-sink",
+ 1221      "config": {
+ 1222        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1223        "tasks.max": "1",
+ 1224        "topics": "test",
+ 1225        "connection.url": "jdbc:postgresql://postgres:5432/kafkadb",
+ 1226        "connection.user": "kafka",
+ 1227        "connection.password": "kafka",
+ 1228        "auto.create": "true",
+ 1229        "auto.evolve": "true",
+ 1230        "insert.mode": "upsert",
+ 1231        "pk.mode": "record_value",
+ 1232        "pk.fields": "id",
+ 1233        "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+ 1234        "key.converter.schemas.enable": "false",
+ 1235        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+ 1236        "value.converter.schemas.enable": "false"
+ 1237      }
+ 1238    }'
+ 1239  kafka-console-producer --broker-list localhost:9092 --topic test <<EOF
+ 1240  {"id": 1, "name": "Ana"}
+ 1241  {"id": 2, "name": "Luis"}
+ 1242  EOF
+ 1243  docker exec -it postgres psql -U kafka -d kafkadb -c "SELECT * FROM test;"
+ 1244  docker logs kafka-connect -f
+ 1245  nano docker-compose.yml
+ 1246  curl -X DELETE http://localhost:8083/connectors/postgres-users-json-sink
+ 1247  curl -X POST http://localhost:8083/connectors   -H "Content-Type: application/json"   -d '{
+ 1248      "name": "postgres-users-json-sink",
+ 1249      "config": {
+ 1250        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1251        "tasks.max": "1",
+ 1252        "topics": "test",
+ 1253        "connection.url": "jdbc:postgresql://postgres:5432/kafkadb",
+ 1254        "connection.user": "kafka",
+ 1255        "connection.password": "kafka",
+ 1256        "auto.create": "true",
+ 1257        "auto.evolve": "true",
+ 1258        "insert.mode": "insert",
+ 1259        "pk.mode": "none",
+ 1260        "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+ 1261        "key.converter.schemas.enable": "false",
+ 1262        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+ 1263        "value.converter.schemas.enable": "false"
+ 1264      }
+ 1265    }'
+ 1266  kafka-console-producer --broker-list localhost:9092 --topic test <<EOF
+ 1267  {"id": 1, "name": "Ana"}
+ 1268  {"id": 2, "name": "Luis"}
+ 1269  EOF
+ 1270  docker exec -it postgres psql -U kafka -d kafkadb -c "SELECT * FROM test;"
+ 1271  docker logs kafka-connect -f
+ 1272  docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
+ 1273  kafka-topics --bootstrap-server localhost:9092 --create --topic test-2 --partitions 1 --replication-factor 1
+ 1274  docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
+ 1275  docker exec -it postgres psql -U kafka -d kafkadb -c "SELECT * FROM test_stream;"
+ 1276  docker logs kafka-connect -f
+ 1277  nano docker-compose.yml
+ 1278  docker exec -it postgres psql -U kafka -d kafkadb -c "SELECT * FROM test_stream;"
+ 1279  docker logs kafka-connect -f
+ 1280  docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
+ 1281  docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+ 1282  ls
+ 1283  nano docker-compose.yml
+ 1284  rm -rf docker-compose.yml
+ 1285  nano docker-compose.yml
+ 1286  docker-compose up -d
+ 1287  docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
+ 1288  docker exec -it ksqldb ksql http://ksqldb-server:8088
+ 1289  docker-compose ps
+ 1290  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1291  curl -X PUT http://localhost:8083/connectors/sink-jdbc-mysql-01/config      -H "Content-Type: application/json" -d '{
+ 1292      "connector.class"                    : "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1293      "connection.url"                     : "jdbc:mysql://mysql:3306/demo",
+ 1294      "topics"                             : "test01",
+ 1295      "key.converter"                      : "org.apache.kafka.connect.storage.StringConverter",
+ 1296      "value.converter"                    : "io.confluent.connect.avro.AvroConverter",
+ 1297      "value.converter.schema.registry.url": "http://schema-registry:8081",
+ 1298      "connection.user"                    : "connect_user",
+ 1299      "connection.password"                : "asgard",
+ 1300      "auto.create"                        : true,
+ 1301      "auto.evolve"                        : true,
+ 1302      "insert.mode"                        : "insert",
+ 1303      "pk.mode"                            : "record_key",
+ 1304      "pk.fields"                          : "MESSAGE_KEY"
+ 1305  }'
+ 1306  curl -X PUT http://localhost:8083/connectors/sink-jdbc-mysql-01/config      -H "Content-Type: application/json" -d '{
+ 1307      "connector.class"                    : "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1308      "connection.url"                     : "jdbc:mysql://mysql:3306/demo",
+ 1309      "topics"                             : "test01",
+ 1310      "key.converter"                      : "org.apache.kafka.connect.storage.StringConverter",
+ 1311      "value.converter"                    : "io.confluent.connect.avro.AvroConverter",
+ 1312      "value.converter.schema.registry.url": "http://schema-registry:8081",
+ 1313      "connection.user"                    : "connect_user",
+ 1314      "connection.password"                : "asgard",
+ 1315      "auto.create"                        : true,
+ 1316      "auto.evolve"                        : true,
+ 1317      "insert.mode"                        : "insert",
+ 1318      "pk.mode"                            : "record_key",
+ 1319      "pk.fields"                          : "MESSAGE_KEY"
+ 1320  }'
+ 1321  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1322  rm -rf docker-compose.yml
+ 1323  nano docker-compose.yml
+ 1324  git clone https://github.com/confluentinc/demo-scene/tree/master/kafka-to-database
+ 1325  git clone kafka-to-database
+ 1326  ls
+ 1327  nano docker-compose.yml
+ 1328  docker-compose up -d
+ 1329  docker-compose ps
+ 1330  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1331  curl -X PUT http://localhost:8083/connectors/sink-jdbc-mysql-01/config      -H "Content-Type: application/json" -d '{
+ 1332      "connector.class"                    : "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1333      "connection.url"                     : "jdbc:mysql://mysql:3306/demo",
+ 1334      "topics"                             : "test01",
+ 1335      "key.converter"                      : "org.apache.kafka.connect.storage.StringConverter",
+ 1336      "value.converter"                    : "io.confluent.connect.avro.AvroConverter",
+ 1337      "value.converter.schema.registry.url": "http://schema-registry:8081",
+ 1338      "connection.user"                    : "connect_user",
+ 1339      "connection.password"                : "asgard",
+ 1340      "auto.create"                        : true,
+ 1341      "auto.evolve"                        : true,
+ 1342      "insert.mode"                        : "insert",
+ 1343      "pk.mode"                            : "record_key",
+ 1344      "pk.fields"                          : "MESSAGE_KEY"
+ 1345  }'
+ 1346  curl -X PUT http://localhost:8083/connectors/sink-jdbc-mysql-01/config      -H "Content-Type: application/json" -d '{
+ 1347      "connector.class"                    : "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1348      "connection.url"                     : "jdbc:mysql://mysql:3306/demo",
+ 1349      "topics"                             : "test01",
+ 1350      "key.converter"                      : "org.apache.kafka.connect.storage.StringConverter",
+ 1351      "value.converter"                    : "io.confluent.connect.avro.AvroConverter",
+ 1352      "value.converter.schema.registry.url": "http://schema-registry:8081",
+ 1353      "connection.user"                    : "connect_user",
+ 1354      "connection.password"                : "asgard",
+ 1355      "auto.create"                        : true,
+ 1356      "auto.evolve"                        : true,
+ 1357      "insert.mode"                        : "insert",
+ 1358      "pk.mode"                            : "record_key",
+ 1359      "pk.fields"                          : "MESSAGE_KEY"
+ 1360  }'
+ 1361  curl -X PUT http://localhost:8083/connectors/sink-jdbc-mysql-01/config      -H "Content-Type: application/json" -d '{
+ 1362      "connector.class"                    : "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1363      "connection.url"                     : "jdbc:mysql://mysql:3306/demo",
+ 1364      "topics"                             : "test01",
+ 1365      "key.converter"                      : "org.apache.kafka.connect.storage.StringConverter",
+ 1366      "value.converter"                    : "io.confluent.connect.avro.AvroConverter",
+ 1367      "value.converter.schema.registry.url": "http://schema-registry:8081",
+ 1368      "connection.user"                    : "connect_user",
+ 1369      "connection.password"                : "asgard",
+ 1370      "auto.create"                        : true,
+ 1371      "auto.evolve"                        : true,
+ 1372      "insert.mode"                        : "insert",
+ 1373      "pk.mode"                            : "record_key",
+ 1374      "pk.fields"                          : "MESSAGE_KEY"
+ 1375  }'
+ 1376  nano docker-compose.yml
+ 1377  docker-compose up -d
+ 1378  curl -s localhost:8083/connector-plugins | jq .
+ 1379  curl -X PUT http://localhost:8083/connectors/sink-jdbc-mysql-01/config      -H "Content-Type: application/json" -d '{
+ 1380      "connector.class"                    : "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1381      "connection.url"                     : "jdbc:mysql://mysql:3306/demo",
+ 1382      "topics"                             : "test01",
+ 1383      "key.converter"                      : "org.apache.kafka.connect.storage.StringConverter",
+ 1384      "value.converter"                    : "io.confluent.connect.avro.AvroConverter",
+ 1385      "value.converter.schema.registry.url": "http://schema-registry:8081",
+ 1386      "connection.user"                    : "connect_user",
+ 1387      "connection.password"                : "asgard",
+ 1388      "auto.create"                        : true,
+ 1389      "auto.evolve"                        : true,
+ 1390      "insert.mode"                        : "insert",
+ 1391      "pk.mode"                            : "record_key",
+ 1392      "pk.fields"                          : "MESSAGE_KEY"
+ 1393  }'
+ 1394  curl -X PUT http://localhost:8083/connectors/sink-jdbc-mysql-01/config      -H "Content-Type: application/json" -d '{
+ 1395      "connector.class"                    : "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1396      "connection.url"                     : "jdbc:mysql://mysql:3306/demo",
+ 1397      "topics"                             : "test01",
+ 1398      "key.converter"                      : "org.apache.kafka.connect.storage.StringConverter",
+ 1399      "value.converter"                    : "io.confluent.connect.avro.AvroConverter",
+ 1400      "value.converter.schema.registry.url": "http://schema-registry:8081",
+ 1401      "connection.user"                    : "connect_user",
+ 1402      "connection.password"                : "asgard",
+ 1403      "auto.create"                        : true,
+ 1404      "auto.evolve"                        : true,
+ 1405      "insert.mode"                        : "insert",
+ 1406      "pk.mode"                            : "record_key",
+ 1407      "pk.fields"                          : "MESSAGE_KEY"
+ 1408  }'
+ 1409  curl -X PUT http://localhost:8083/connectors/sink-jdbc-mysql-01/config      -H "Content-Type: application/json" -d '{
+ 1410      "connector.class"                    : "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1411      "connection.url"                     : "jdbc:mysql://mysql:3306/demo",
+ 1412      "topics"                             : "test01",
+ 1413      "key.converter"                      : "org.apache.kafka.connect.storage.StringConverter",
+ 1414      "value.converter"                    : "io.confluent.connect.avro.AvroConverter",
+ 1415      "value.converter.schema.registry.url": "http://schema-registry:8081",
+ 1416      "connection.user"                    : "connect_user",
+ 1417      "connection.password"                : "asgard",
+ 1418      "auto.create"                        : true,
+ 1419      "auto.evolve"                        : true,
+ 1420      "insert.mode"                        : "insert",
+ 1421      "pk.mode"                            : "record_key",
+ 1422      "pk.fields"                          : "MESSAGE_KEY"
+ 1423  }'
+ 1424  curl -X PUT http://localhost:8083/connectors/sink-jdbc-mysql-01/config      -H "Content-Type: application/json" -d '{
+ 1425      "connector.class"                    : "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1426      "connection.url"                     : "jdbc:mysql://mysql:3306/demo",
+ 1427      "topics"                             : "test01",
+ 1428      "key.converter"                      : "org.apache.kafka.connect.storage.StringConverter",
+ 1429      "value.converter"                    : "io.confluent.connect.avro.AvroConverter",
+ 1430      "value.converter.schema.registry.url": "http://schema-registry:8081",
+ 1431      "connection.user"                    : "connect_user",
+ 1432      "connection.password"                : "asgard",
+ 1433      "auto.create"                        : true,
+ 1434      "auto.evolve"                        : true,
+ 1435      "insert.mode"                        : "insert",
+ 1436      "pk.mode"                            : "record_key",
+ 1437      "pk.fields"                          : "MESSAGE_KEY"
+ 1438  }'
+ 1439  curl -X PUT http://localhost:8083/connectors/sink-jdbc-mysql-01/config      -H "Content-Type: application/json" -d '{
+ 1440      "connector.class"                    : "io.confluent.connect.jdbc.JdbcSinkConnector",
+ 1441      "connection.url"                     : "jdbc:mysql://mysql:3306/demo",
+ 1442      "topics"                             : "test01",
+ 1443      "key.converter"                      : "org.apache.kafka.connect.storage.StringConverter",
+ 1444      "value.converter"                    : "io.confluent.connect.avro.AvroConverter",
+ 1445      "value.converter.schema.registry.url": "http://schema-registry:8081",
+ 1446      "connection.user"                    : "connect_user",
+ 1447      "connection.password"                : "asgard",
+ 1448      "auto.create"                        : true,
+ 1449      "auto.evolve"                        : true,
+ 1450      "insert.mode"                        : "insert",
+ 1451      "pk.mode"                            : "record_key",
+ 1452      "pk.fields"                          : "MESSAGE_KEY"
+ 1453  }'
+ 1454  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1455  docker ps | grep kafka-connect
+ 1456  curl -s localhost:8083/connector-plugins | jq .
+ 1457  docker exec -it kafka-connect bash
+ 1458  curl -s http://localhost:8083/connector-plugins | jq .
+ 1459  docker exec -it kafka-connect bash
+ 1460  docker restart kafka-connect
+ 1461  curl -s localhost:8083/connector-plugins | jq .
+ 1462  docker exec -it kafka-connect bash
+ 1463  curl -s localhost:8083/connector-plugins | jq .
+ 1464  docker exec -it kafka-connect bash
+ 1465  docker restart kafka-connect
+ 1466  curl -s localhost:8083/connector-plugins | jq .
+ 1467  docker exec -it kafka-connect bash
+ 1468  curl -s localhost:8083/connector-plugins | jq .
+ 1469  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1470  docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+ 1471  exit
+ 1472  nano docker-compose.yml
+ 1473  cat docker-compose.yml
+ 1474  docker exec -it kafka-connect bash
+ 1475  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1476  kafka-avro-console-producer   --broker-list localhost:9092   --topic FOO_01   --property schema.registry.url=http://localhost:8081   --property value.schema='{
+ 1477      "type":"record",
+ 1478      "name":"FOO_01",
+ 1479      "fields":[
+ 1480        {"name":"COL1","type":"int"},
+ 1481        {"name":"COL2","type":"int"}
+ 1482      ]
+ 1483    }'
+ 1484  curl http://localhost:8081/subjects/FOO_01-value/versions/latest
+ 1485  CREATE SINK CONNECTOR SINK_FOO_02_0 WITH (
+ 1486  );
+ 1487  CREATE SINK CONNECTOR SINK_FOO_02_0 WITH (
+ 1488  );
+ 1489  CREATE SINK CONNECTOR SINK_FOO_02_0 WITH (
+ 1490  );
+ 1491  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1492  curl http://localhost:8083/connectors
+ 1493  curl -X DELETE http://localhost:8083/connectors/SINK_FOO_02_0
+ 1494  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1495  docker-compose restart
+ 1496  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1497  docker ps
+ 1498  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1499  docker exec -it kafka-connect bash
+ 1500  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1501  docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+ 1502  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1503  docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+ 1504  docker
+ 1505  exit
+ 1506  docker
+ 1507  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1508  docker ps --filter name=kafka-connect
+ 1509  docker exec -it ksqldb curl http://kafka-connect:8083/connectors
+ 1510  docker logs -f kafka-connect
+ 1511  ls
+ 1512  curl -s localhost:8083/connector-plugins | jq .
+ 1513  docker exec -it kafka-connect bash
+ 1514  confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.0.0
+ 1515  ls
+ 1516  docker exec -it kafka-connect bash
+ 1517  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1518  cd ..
+ 1519  cd OneDrive
+ 1520  ls
+ 1521  cd ..
+ 1522  ls
+ 1523  cd 'OneDrive - Telefonica'
+ 1524  ls
+ 1525  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1526  docker exec -it broker   kafka-avro-console-consumer   --topic FOO_01   --bootstrap-server broker:29092   --from-beginning   --property schema.registry.url=http://schema-registry:8081
+ 1527  kafka-avro-console-consumer   --topic FOO_01   --bootstrap-server broker:29092   --from-beginning   --property schema.registry.url=http://schema-registry:8081
+ 1528  kafka-avro-console-consumer   --topic FOO_01   --bootstrap-server localhost:9092   --from-beginning   --property schema.registry.url=http://localhost:8081
+ 1529  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1530  docker exec -it postgres psql -U postgres
+ 1531  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1532  docker exec -it postgres psql -U postgres
+ 1533  ls
+ 1534  wget https://jdbc.postgresql.org/download/postgresql-42.7.4.jar -P ./connectors
+ 1535  ls
+ 1536  nano docker-compose.yml
+ 1537  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1538  docker-compose up -d --build
+ 1539  curl http://localhost:8083/connector-plugins | jq
+ 1540  docker exec -it kafka-connect bash
+ 1541  docker restart kafka-connect
+ 1542  curl http://localhost:8083/connector-plugins | jq
+ 1543  curl -s localhost:8083/connector-plugins | jq .
+ 1544  docker logs -f kafka-connect
+ 1545  docker exec -it kafka-connect bash
+ 1546  curl -s localhost:8083/connector-plugins | jq .
+ 1547  CONNECT_PLUGIN_PATH: '/usr/share/java,/usr/share/confluent-hub-components/,/connectors/'
+ 1548  docker exec -it kafka-connect bash
+ 1549  ls
+ 1550  nano docker-compose.yml
+ 1551  docker-compose down
+ 1552  docker-compose up -d
+ 1553  docker exec -it kafka-connect bash
+ 1554  curl -s localhost:8083/connector-plugins | jq .
+ 1555  docker logs kafka-connect
+ 1556  curl -s localhost:8083/connector-plugins | jq .
+ 1557  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1558  nano docker-compose.yml
+ 1559  docker-compose down
+ 1560  docker-compose up -d
+ 1561  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1562  docker ps | grep ksqldb
+ 1563  docker exec -it ksqldb bash
+ 1564  docker-compose down
+ 1565  nano docker-compose.yml
+ 1566  docker-compose up -d
+ 1567  nano docker-compose.yml
+ 1568  docker-compose up -d
+ 1569  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1570  nano docker2.yml
+ 1571  nano docker-compose.yml
+ 1572  nano docker2.yml
+ 1573  docker-compose up -d
+ 1574  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1575  docker-compose up -d
+ 1576  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1577  curl -s localhost:8083/connector-plugins | jq .
+ 1578  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1579  docker exec -it kafka-connect bash
+ 1580  echo $CONNECT_PLUGIN_PATH
+ 1581  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1582  docker restart kafka-connect
+ 1583  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1584  curl -s localhost:8083/connector-plugins | jq .
+ 1585  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1586  curl -s localhost:8083/connector-plugins | jq .
+ 1587  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1588  docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+ 1589  docker-compose down
+ 1590  docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+ 1591  rm -rf ./data/postgres/*
+ 1592  docker-compose up -d
+ 1593  docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+ 1594  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1595  curl -s localhost:8083/connector-plugins | jq .
+ 1596  docker exec -it kafka-connect bash
+ 1597  docker restart kafka-connect
+ 1598  curl -s localhost:8083/connector-plugins | jq .
+ 1599  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1600  docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+ 1601  docker exec -it ksqldb ksql http://ksqldb:8088
+ 1602  curl http://localhost:8081/subjects
+
+ 1614  nano FooRecord.avsc
+ 1615  cd ..
+ 1616  ls
+ 1617  cd kafka-avro-producer/
+ 1618  mvn clean compile
+ 1619  ls
+ 1620  nano pom.xml
+ 1621  mvn clean compile
+ 1622  nano pom.xml
+ 1623  java -version
+ 1624  nano pom.xml
+ 1625  mvn clean compile
+ 1626  mvn exec:java -Dexec.mainClass="com.example.App"
+ 1627  curl http://localhost:8081/subjects/FOO_01-value/versions/latest | jq .
+ 1628  mvn exec:java -Dexec.mainClass="com.example.App"
+ 1629  mkdir connect
+ 1630  ls
+ 1631  cd connect/
+ 1632  ls
+ 1633  nano sink_foo01.json
+ 1634  cd ..
+ 1635  curl -X POST -H "Content-Type: application/json"      --data @sink_foo01.json      http://localhost:8083/connectors
+ 1636  curl -X POST -H "Content-Type: application/json"      --data @connect/sink_foo01.json      http://localhost:8083/connectors
+ 1637  cd connect/
+ 1638  ls
+ 1639  cd connect/
+ 1640  nano sink_foo01.json
+ 1641  rm sink_foo01.json
+ 1642  nano sink_foo01.json
+ 1643  cd ..
+ 1644  curl -X POST -H "Content-Type: application/json"      --data @connect/sink_foo01.json      http://localhost:8083/connectors
+ 1645  docker exec -it postgres psql -U postgres
+ 1646  mvn exec:java -Dexec.mainClass="com.example.App"
+ 1647  cd connect/
+ 1648  ls
+ 1649  nano sink_foo01.json
+ 1650  curl -X PUT -H "Content-Type: application/json"      --data @sink_foo01.json      http://localhost:8083/connectors/SINK_FOO_01_0/config
+ 1651  curl -X DELETE http://localhost:8083/connectors/SINK_FOO_01_0
+ 1652  curl -X POST -H "Content-Type: application/json"      --data @connect/sink_foo01.json      http://localhost:8083/connectors
+ 1653  cd ..
+ 1654  curl -X POST -H "Content-Type: application/json"      --data @connect/sink_foo01.json      http://localhost:8083/connectors
+ 1655  nano sink_foo01.json
+ 1656  cd ..
+ 1657  curl -X POST -H "Content-Type: application/json"      --data @connect/sink_foo01.json      http://localhost:8083/connectors
+ 1658  mvn exec:java -Dexec.mainClass="com.example.App"
+ 1659  curl -X DELETE http://localhost:8083/connectors/SINK_FOO_01_0
+ 1660  curl -X POST -H "Content-Type: application/json"      --data @connect/sink_foo01.json      http://localhost:8083/connectors
+ 1661  mvn exec:java -Dexec.mainClass="com.example.App"
+ 1662  kafka-console-consumer   --bootstrap-server localhost:9092   --topic FOO_01   --partition 0   --offset 2   --max-messages 1
+ 1663  anamp@PC-5CG3404KJF:/mnt/c/Users/id05294/OneDrive - Telefonica/Documentos/kafka/connect-test/kafka-avro-producer$ kafka-console-consumer   --bootstrap-server localhost:9092   --topic FOO_01   --partition 0   --offset 2   --max-messages 1
+ 1664  Processed a total of 1 messages
+ 1665  anamp@PC-5CG3404KJF:/mnt/c/Users/id05294/OneDrive - Telefonica/Documentos/kafka/connect-test/kafka-avro-producer$ kafka-console-consumer   --bootstrap-server localhost:9092   --topic FOO_01   --partition 0   --offset 2   --max-messages 1
+ 1666  Processed a total of 1 messages
+ 1667  kafka-avro-console-consumer   --bootstrap-server localhost:9092   --topic FOO_01   --partition 0   --offset 2   --max-messages 1   --property schema.registry.url=http://localhost:8081
+ 1668  mvn clean compile
+ 1669  mvn exec:java -Dexec.mainClass="com.example.App"
+ 1670  kafka-console-consumer   --bootstrap-server localhost:9092   --topic FOO_01   --from-beginning   --property print.headers=true
+ 1671  ls
+ 1672  cd connect/
+ 1673  ls
+ 1674  nano sink_foo01.json
+ 1675  curl -X PUT -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connectors/SINK_FOO_01_0/config
+ 1676  cd ..
+ 1677  curl -X PUT -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connectors/SINK_FOO_01_0/config
+ 1678  curl -X DELETE http://localhost:8083/connectors/SINK_FOO_01_0
+ 1679  curl -X POST -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connectors
+ 1680  cd connect/
+ 1681  ls
+ 1682  nano sink_foo01.json
+ 1683  cd ..
+ 1684  curl -X POST -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connectors
+ 1685  cd connect/
+ 1686  nano sink_foo01.json
+ 1687  cd ..
+ 1688  curl -X POST -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connectors
+ 1689  cd connect/
+ 1690  cat sink_foo01.json
+ 1691  nano sink_foo01.json
+ 1692  cd ..
+ 1693  curl -X POST -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connectors
+ 1694  cd connect/
+ 1695  nano sink_foo01.json
+ 1696  cd ..
+ 1697  curl -X POST -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connectors
+ 1698  curl -X PUT -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connector-plugins/io.confluent.connect.jdbc.JdbcSinkConnector/config/validate
+ 1699  curl -X PUT -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connector-plugins/io.confluent.connect.jdbc.JdbcSinkConnector/config/validate
+ 1700  cd connect/
+ 1701  ls
+ 1702  nano sink_foo01.json
+ 1703  cd ..
+ 1704  ls
+ 1705  curl -X PUT -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connector-plugins/io.confluent.connect.jdbc.JdbcSinkConnector/config/validate
+ 1706  curl -X POST -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connectors
+ 1707  curl http://localhost:8081/subjects/FOO_01-value/versions/latest | jq .
+ 1708  curl http://localhost:8081/subjects
+ 1709  curl -s localhost:8083/connector-plugins | jq .
+ 1710  curl http://localhost:8083/connector-plugins | jq '.[] | select(.class=="io.confluent.connect.jdbc.JdbcSinkConnector") | .transforms'
+ 1711  curl http://localhost:8083/connector-plugins | jq .
+ 1712  ls
+ 1713  curl -X POST -H "Content-Type: application/json"   --data @connect/sink_foo01.json   http://localhost:8083/connectors
+ 1714  mvn exec:java -Dexec.mainClass="com.example.App"
+ 1715  docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+ 1716  pwd
+ 
+ 1727  cd examples/
+ 1728  ls
+ 1729  ssh ubuntu@192.168.165.251
+ 1730  ssh 192.168.165.87
+ 1731  ssh ubuntu@192.168.165.87
+ 1732  docker run --rm -p 3000:3000   -e PGRST_DB_URI="postgres://postgres:postgres@host.docker.internal:5432/postgres"   -e PGRST_DB_SCHEMA="public"   -e PGRST_DB_ANON_ROLE="anon"   postgrest/postgrest
+ 1733  docker network ls
+ 1734  docker run --rm -p 3000:3000   --network connect-test_default   -e PGRST_DB_URI="postgres://postgres:postgres@postgres:5432/postgres"   -e PGRST_DB_SCHEMA="public"   -e PGRST_DB_ANON_ROLE="anon"   postgrest/postgrest

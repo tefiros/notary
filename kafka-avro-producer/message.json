@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-10-15T11:05:00Z",
+  "device_id": "router-01",
+  "location": "data-center-madrid",
+  "network_metrics": [
+    {
+      "metric_name": "packet_loss",
+      "unit": "%",
+      "current_value": 2.1,
+      "anomaly": {
+        "is_anomalous": true,
+        "degree": 0.85,
+        "severity": "CRITICAL"
+      }
+    }
+  ]
+}
