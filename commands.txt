@@ -1,9 +1,20 @@
+DENTRO de KAFKA CONNECT
+
+docker exec -it kafka-connect bash
 confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.0.0 
 
 curl -L -o /usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc/postgresql-42.2.18.jar https://jdbc.postgresql.org/download/postgresql-42.2.18.jar
-
+ docker cp postgresql-42.7.4.jar kafka-connect:/usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc/lib/
 
 confluent-hub install jcustenborder/kafka-connect-transform-common:latest
+
+docker restart kafka-connect
+
+ 1463  curl -s localhost:8083/connector-plugins | jq .
+ 1464  docker exec -it kafka-connect bash
+ 1465  docker restart kafka-connect
+
+anamp@PC-5CG3404KJF:/mnt/c/Users/id05294/OneDrive - Telefonica/Documentos/kafka/connect-test/kafka-avro-producer/connect$ curl -X POST -H "Content-Type: application/json"  --data @sink_receipt.json   http://localhost:8083/connectors
 
 
 ARRANCAR DOCKER
@@ -484,17 +495,8 @@ SELECT * FROM "RECEIPT_01"; \q
  1452      "pk.fields"                          : "MESSAGE_KEY"
  1453  }'
  1454  docker exec -it ksqldb ksql http://ksqldb:8088
- 1455  docker ps | grep kafka-connect
- 1456  curl -s localhost:8083/connector-plugins | jq .
- 1457  docker exec -it kafka-connect bash
- 1458  curl -s http://localhost:8083/connector-plugins | jq .
- 1459  docker exec -it kafka-connect bash
- 1460  docker restart kafka-connect
- 1461  curl -s localhost:8083/connector-plugins | jq .
- 1462  docker exec -it kafka-connect bash
- 1463  curl -s localhost:8083/connector-plugins | jq .
- 1464  docker exec -it kafka-connect bash
- 1465  docker restart kafka-connect
+
+
  1466  curl -s localhost:8083/connector-plugins | jq .
  1467  docker exec -it kafka-connect bash
  1468  curl -s localhost:8083/connector-plugins | jq .
@@ -505,15 +507,7 @@ SELECT * FROM "RECEIPT_01"; \q
  1473  cat docker-compose.yml
  1474  docker exec -it kafka-connect bash
  1475  docker exec -it ksqldb ksql http://ksqldb:8088
- 1476  kafka-avro-console-producer   --broker-list localhost:9092   --topic FOO_01   --property schema.registry.url=http://localhost:8081   --property value.schema='{
- 1477      "type":"record",
- 1478      "name":"FOO_01",
- 1479      "fields":[
- 1480        {"name":"COL1","type":"int"},
- 1481        {"name":"COL2","type":"int"}
- 1482      ]
- 1483    }'
- 1484  curl http://localhost:8081/subjects/FOO_01-value/versions/latest
+ http://localhost:8081/subjects/FOO_01-value/versions/latest
  1485  CREATE SINK CONNECTOR SINK_FOO_02_0 WITH (
  1486  );
  1487  CREATE SINK CONNECTOR SINK_FOO_02_0 WITH (
