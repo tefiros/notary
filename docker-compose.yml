@@ -173,15 +173,15 @@ services:
       PGRST_DB_SCHEMA: "public"
       PGRST_DB_ANON_ROLE: "anon"
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"     # Puerto AMQP para conectar clientes
-      - "15672:15672"   # Consola web de RabbitMQ
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   container_name: rabbitmq
+  #   ports:
+  #     - "5672:5672"     # Puerto AMQP para conectar clientes
+  #     - "15672:15672"   # Consola web de RabbitMQ
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: guest
+  #     RABBITMQ_DEFAULT_PASS: guest
 
 
 # kafkacat:
