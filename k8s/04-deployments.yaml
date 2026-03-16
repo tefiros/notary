@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ter-schema-registry
+  namespace: it6g
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ter-schema-registry
+  template:
+    metadata:
+      label:
+        app: ter-schema-registry
+    spec:
+      containers:
+        - name: ter-schema-registry
+          image: confluentinc/cp-schema-registry:6.1.0
+          ports:
+            - containerPort: 8081
+              name: http
+          envFrom:
+            - configMapRef:
+                name: ter-schema-registry-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ter-kafka-connect
+  namespace: it6g
+spec:
+  replica: 1
+  selector:
+    matchLabels:
+      app: ter-kafka-connect
+  template:
+    metadata:
+      label:
+        app: ter-kafka-connect
+    spec:
+      containers:
+        - name: ter-kafka-connect
+          image: confluentinc/cp-kafka-connect:6.1.0
+          ports:
+            - containerPort: 8083
+              name: http
+          envFrom:
+            - configMapRef:
+                name: ter-kafka-connect-config
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: ter-connector-plugin
+              mountPath: /connectors
+      volumes:
+        - name: ter-connector-plugin
+          persistentVolumeClaim:
+            claimName: ter-kafka-connect-connectors
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ter-ksqldb
+  namespace: it6g
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ter-ksqldb
+  template:
+    metadata:
+      label:
+        app: ter-ksqldb
+    spec:
+      containers:
+        - name: ter-ksqldb
+          image: confluentinc/ksqldb-server:0.15.0
+          ports:
+            - containerPort: 8088
+              name: http
+          envFrom:
+            - configMapRef:
+                name: ter-ksqldb-config
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ter-postgrest
+  namespace: it6g
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ter-postgrest
+  template:
+    metadata:
+      label:
+        app: ter-postgrest
+    spec:
+      containers:
+        - name: ter-postgrest
+          image: postgrest/postgrest:v7.0.2
+          ports:
+            - containerPort: 3000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: ter-postgrest-config
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"

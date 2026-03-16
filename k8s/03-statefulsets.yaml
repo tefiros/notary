@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ter-zookeeper
+  namespace: it6g
+spec:
+  serviceName: ter-zookeeper
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ter-zookeeper
+  template:
+    metadata:
+      labels:
+        app: ter-zookeeper
+    spec:
+      containers:
+        - name: ter-zookeeper
+          image: confluentinc/cp-zookeeper:6.1.0
+          ports:
+            - containerPort: 2181
+              name: client
+          envFrom:
+            - configMapRef:
+                name: ter-zookeeper-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ter-kafka
+  namespace: it6g
+spec:
+  serviceName: ter-kafka
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ter-kafka
+  template:
+    metadata:
+      label:
+        app: ter-kafka
+    spec:
+      containers:
+        - name: ter-kafka
+          image: confluentinc/cp-kafka:6.1.0
+          ports:
+            - containerPort: 9092
+              name: external
+            - containerPort: 29092
+              name: internal
+          envFrom:
+            - configMapRef:
+                name: ter-kafka-config
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: ter-kafka-data
+              mountPath: /var/lib/kafka/data
+      volumes:
+        - name: ter-kafka-data
+          persistentVolumeClaim:
+            claimName: ter-kafka-data
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ter-postgres
+  namespace: it6g
+spec:
+  serviceName: ter-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ter-postgres
+  template:
+    metadata:
+      label:
+        app: ter-postgres
+    spec:
+      containers:
+        - name: ter-postgres
+          image: postgres:12
+          ports:
+            - containerPort: 5432
+              name: postgres
+          envFrom:
+            - configMapRef:
+                name: ter-postgres-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: ter-postgres-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: ter-postgres-data
+          persistentVolumeClaim:
+            claimName: ter-postgres-data
