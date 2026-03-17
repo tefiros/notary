@@ -44,7 +44,7 @@ spec:
       app: ter-kafka
   template:
     metadata:
-      label:
+      labels:
         app: ter-kafka
     spec:
       containers:
@@ -86,12 +86,12 @@ spec:
       app: ter-postgres
   template:
     metadata:
-      label:
+      labels:
         app: ter-postgres
     spec:
       containers:
         - name: ter-postgres
-          image: postgres:12
+          image: debezium/postgres:12
           ports:
             - containerPort: 5432
               name: postgres

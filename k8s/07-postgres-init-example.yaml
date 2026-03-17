@@ -1,0 +1,77 @@
+# Optional example: PostgreSQL initialization with SQL scripts in Kubernetes.
+# This file is NOT applied by default. Use it only if you need compose-like SQL bootstrap behavior.
+#
+# How to use with local files:
+# 1) Create data/postgres/ with one or more .sql files
+# 2) Create/update ConfigMap from that folder:
+#    kubectl -n it6g create configmap ter-postgres-init-sql --from-file=data/postgres --dry-run=client -o yaml | kubectl apply -f -
+# 3) Apply the Job below (or re-apply after changing SQL files)
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ter-postgres-init-sql
+  namespace: it6g
+data:
+  001-init.sql: |
+    -- Example seed script. Replace this ConfigMap content with your own SQL files.
+    CREATE TABLE IF NOT EXISTS evidence_example (
+      id SERIAL PRIMARY KEY,
+      payload TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ter-postgres-init-job
+  namespace: it6g
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: ter-postgres-init
+          image: postgres:12
+          env:
+            - name: PGHOST
+              value: ter-postgres
+            - name: PGPORT
+              value: "5432"
+            - name: PGDATABASE
+              value: postgres
+            - name: PGUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: ter-postgres-config
+                  key: POSTGRES_USER
+            - name: PGPASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: ter-postgres-config
+                  key: POSTGRES_PASSWORD
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              until pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER"; do
+                echo "waiting for postgres"
+                sleep 2
+              done
+
+              for sql_file in /sql/*.sql; do
+                echo "running ${sql_file}"
+                psql -v ON_ERROR_STOP=1 -f "$sql_file"
+              done
+          volumeMounts:
+            - name: init-sql
+              mountPath: /sql
+              readOnly: true
+      volumes:
+        - name: init-sql
+          configMap:
+            name: ter-postgres-init-sql

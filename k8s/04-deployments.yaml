@@ -10,9 +10,18 @@ spec:
       app: ter-schema-registry
   template:
     metadata:
-      label:
+      labels:
         app: ter-schema-registry
     spec:
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z ter-zookeeper 2181; do echo "waiting for zookeeper"; sleep 2; done
+              until nc -z ter-kafka 29092; do echo "waiting for kafka"; sleep 2; done
       containers:
         - name: ter-schema-registry
           image: confluentinc/cp-schema-registry:6.1.0
@@ -36,15 +45,38 @@ metadata:
   name: ter-kafka-connect
   namespace: it6g
 spec:
-  replica: 1
+  replicas: 1
   selector:
     matchLabels:
       app: ter-kafka-connect
   template:
     metadata:
-      label:
+      labels:
         app: ter-kafka-connect
     spec:
+      initContainers:
+        - name: wait-for-deps
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z ter-kafka 29092; do echo "waiting for kafka"; sleep 2; done
+              until nc -z ter-schema-registry 8081; do echo "waiting for schema registry"; sleep 2; done
+        - name: bootstrap-connect-plugins
+          image: confluentinc/cp-kafka-connect:6.1.0
+          command:
+            - bash
+            - -c
+            - |
+              mkdir -p /connectors
+              confluent-hub install --no-prompt --component-dir /connectors mdrogalis/voluble:0.3.1
+              confluent-hub install --no-prompt --component-dir /connectors confluentinc/kafka-connect-jdbc:5.5.3
+              cd /connectors/confluentinc-kafka-connect-jdbc
+              curl -fsSL https://cdn.mysql.com/Downloads/Connector-J/mysql-connector-java-8.0.23.tar.gz | tar xz
+          volumeMounts:
+            - name: ter-connector-plugin
+              mountPath: /connectors
       containers:
         - name: ter-kafka-connect
           image: confluentinc/cp-kafka-connect:6.1.0
@@ -81,9 +113,19 @@ spec:
       app: ter-ksqldb
   template:
     metadata:
-      label:
+      labels:
         app: ter-ksqldb
     spec:
+      initContainers:
+        - name: wait-for-deps
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z ter-kafka 29092; do echo "waiting for kafka"; sleep 2; done
+              until nc -z ter-kafka-connect 8083; do echo "waiting for kafka-connect"; sleep 2; done
+              until nc -z ter-schema-registry 8081; do echo "waiting for schema registry"; sleep 2; done
       containers:
         - name: ter-ksqldb
           image: confluentinc/ksqldb-server:0.15.0
@@ -113,9 +155,17 @@ spec:
       app: ter-postgrest
   template:
     metadata:
-      label:
+      labels:
         app: ter-postgrest
     spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z ter-postgres 5432; do echo "waiting for postgres"; sleep 2; done
       containers:
         - name: ter-postgrest
           image: postgrest/postgrest:v7.0.2

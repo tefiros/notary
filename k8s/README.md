@@ -28,11 +28,23 @@ kubectl apply -f k8s/06-ingress.yaml
 |------|-------------|
 | `00-namespace.yaml` | Namespace `it6g` |
 | `01-configmap.yaml` | Environment variables for all services |
-| `02-storage.yaml` | Longhorn StorageClass + PVCs |
+| `02-storage.yaml` | Longhorn PVCs |
 | `03-statefulsets.yaml` | StatefulSets: ZooKeeper, Kafka, PostgreSQL |
 | `04-deployments.yaml` | Deployments: Schema Registry, Kafka Connect, ksqldb, PostgREST |
 | `05-services.yaml` | ClusterIP/NodePort services |
 | `06-ingress.yaml` | Ingress for external access |
+| `07-postgres-init-example.yaml` | Optional example: SQL bootstrap ConfigMap + Job for PostgreSQL |
+
+## Required User Adjustments
+
+This `k8s` directory is intended as a fresh deployment baseline. Before using it, review these environment-specific settings:
+
+1. Kafka external access: update `KAFKA_ADVERTISED_LISTENERS` in `01-configmap.yaml` to the real host/port your clients use.
+2. Ingress DNS: update the host in `06-ingress.yaml`.
+3. Storage class and size: confirm `storageClassName` and PVC sizes in `02-storage.yaml` for your cluster.
+4. Credentials: replace PostgreSQL credentials in `01-configmap.yaml` with a Secret.
+5. Optional service aliases: if existing tools still use Docker Compose names (`broker`, `schema-registry`, etc.), add alias Services in `05-services.yaml`.
+6. PostgreSQL init data/scripts: the repository currently does not include a `data/postgres` directory. If you need compose-like SQL bootstrap files, create `data/postgres` and use the optional example in `07-postgres-init-example.yaml`.
 
 ## Customization Guide
 
@@ -51,7 +63,9 @@ All resources use the `ter-` prefix (Transparent Evidence Repository). To change
 
 ### 3. Storage (Longhorn)
 
-The `StorageClass` expects Longhorn to be installed. To use a different storage:
+This setup assumes Longhorn is already installed and provides a `StorageClass` named `longhorn`.
+
+If your class name is different, update each PVC in `02-storage.yaml`:
 
 ```yaml
 # In 02-storage.yaml, change:
@@ -63,6 +77,8 @@ Adjust PVC sizes as needed:
 - `ter-postgres-data`: 5Gi
 - `ter-kafka-data`: 10Gi
 
+All PVCs are currently `ReadWriteOnce`, which is correct for the current single-replica workloads.
+
 ### 4. Image Versions
 
 Update images in StatefulSet/Deployment specs:
@@ -71,7 +87,7 @@ Update images in StatefulSet/Deployment specs:
 - Schema Registry: `confluentinc/cp-schema-registry:6.1.0`
 - Kafka Connect: `confluentinc/cp-kafka-connect:6.1.0`
 - ksqldb: `confluentinc/ksqldb-server:0.15.0`
-- PostgreSQL: `postgres:12`
+- PostgreSQL: `debezium/postgres:12`
 - PostgREST: `postgrest/postgrest:v7.0.2`
 
 ### 5. Resource Limits
@@ -98,6 +114,22 @@ spec:
     - nodePort: 30092  # Change port number
 ```
 
+  `KAFKA_ADVERTISED_LISTENERS` in `01-configmap.yaml` must match the way clients reach Kafka externally.
+
+  Current default is tuned for local Docker Desktop-style setups:
+
+  ```yaml
+  KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://ter-kafka:29092,PLAINTEXT_HOST://kubernetes.docker.internal:30092"
+  ```
+
+  Use one of these alternatives when needed:
+
+  - Bare metal / VM Kubernetes: replace `kubernetes.docker.internal` with a reachable node IP or DNS name.
+  - Cloud Kubernetes: switch `ter-kafka-external` service to `LoadBalancer` and advertise the load balancer DNS/IP.
+  - Local port-forward workflow: advertise `localhost:9092` and use `kubectl port-forward` instead of NodePort.
+
+  If advertised host/port and actual entry point differ, Kafka clients will connect but fail on metadata refresh.
+
 ### 8. Database Credentials
 
 PostgreSQL credentials are in `01-configmap.yaml`. For production, use Secrets:
@@ -110,18 +142,46 @@ envFrom:
 
 ### 9. Kafka Connect Connectors
 
-The connectors plugins initialization command runs on startup. To customize, modify the container `command` in `04-deployments.yaml` for `ter-kafka-connect`.
+The Kubernetes deployment now includes plugin bootstrapping behavior equivalent to compose via an initContainer in `04-deployments.yaml`.
+
+Plugins are installed into the PVC-mounted `/connectors` directory, which is included in `CONNECT_PLUGIN_PATH`.
 
 ## Dependencies & Startup Order
 
-Services start in this order (due to implicit dependencies):
+Services start in this order (enforced by initContainers):
 
 1. ZooKeeper → Kafka
 2. Kafka → Schema Registry, Kafka Connect
 3. Kafka + Kafka Connect → ksqldb
 4. PostgreSQL → PostgREST
 
-Wait ~30s between applying each layer for proper initialization.
+You can apply all manifests in one shot; startup ordering is handled by pod init steps.
+
+## Optional: PostgreSQL SQL Bootstrap
+
+Use `07-postgres-init-example.yaml` when you want compose-like SQL initialization from script files.
+
+Suggested workflow:
+
+1. Create the folder `data/postgres` in the repository and add one or more `.sql` files.
+2. Create/update the SQL ConfigMap from that folder:
+
+```bash
+kubectl -n it6g create configmap ter-postgres-init-sql --from-file=data/postgres --dry-run=client -o yaml | kubectl apply -f -
+```
+
+3. Apply the optional bootstrap job:
+
+```bash
+kubectl apply -f k8s/07-postgres-init-example.yaml
+```
+
+4. Re-run the job after SQL changes:
+
+```bash
+kubectl delete job -n it6g ter-postgres-init-job --ignore-not-found
+kubectl apply -f k8s/07-postgres-init-example.yaml
+```
 
 ## Service Name Reference
 
@@ -130,7 +190,7 @@ All service names are prefixed with `ter-`:
 | Docker Compose | Kubernetes Service | Notes |
 |-----------------|--------------------|--------|
 | `zookeeper` | `ter-zookeeper:2181` | Internal DNS |
-| `broker` | `ter-kafka:29092` (internal), `:9092` (external) | Use internal for pod-to-pod |
+| `broker` | `ter-kafka:29092` (internal), `:30092` (external NodePort) | Use internal for pod-to-pod |
 | `schema-registry` | `ter-schema-registry:8081` | |
 | `kafka-connect` | `ter-kafka-connect:8083` | |
 | `ksqldb` | `ter-ksqldb:8088` | |
@@ -148,7 +208,7 @@ Files: `kafka-avro-producer/connect/*.json`
 These JSON files reference internal service names. When deploying to K8s:
 
 1. Change `broker:29092` → `ter-kafka:29092` for internal access
-2. Or use external: `localhost:9092` (via NodePort 30092)
+2. Or use external NodePort: `<node-hostname-or-ip>:30092`
 
 Example fix:
 ```json
@@ -157,7 +217,7 @@ Example fix:
 
 ### Commands & Scripts
 
-Commands expecting `localhost:9092` still work via the NodePort service (port 30092).
+Commands expecting `localhost:9092` only work when using `kubectl port-forward`.
 
 However, scripts using Docker network names (e.g., `schema-registry:8081`) need updating:
 - `schema-registry:8081` → `ter-schema-registry:8081`
