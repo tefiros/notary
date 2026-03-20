@@ -1,0 +1,42 @@
+# stages:
+#   - build
+#   - deploy
+#   - nextonic
+
+# variables:
+#   REGISTRY_URL: registry.pdmfc.com
+#   PUB_REGISTRY_URL: dregistry.pdmfc.com
+
+
+
+# deploy:
+#   stage: deploy
+#   image: $PUB_REGISTRY_URL/pdm/kubectl-with-bash:1.33.1
+#   before_script:
+#     - mkdir -p /tmp
+#     - echo "$KUBECONFIG_DATA" | base64 -d > /tmp/kubeconfig
+#     - chmod 600 /tmp/kubeconfig
+#     - export KUBECONFIG=/tmp/kubeconfig
+#     - sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_NAME|g" k8s/04-deployments.yaml
+#   script:
+#     - echo "Deploying to Kubernetes Namespace it6g"
+#     - kubectl -n it6g apply -f k8s/
+#     - kubectl -n it6g rollout restart deployment
+#     - kubectl -n it6g rollout status deployment --timeout=300s
+#   tags:
+#     - k8s-it6g-gitlab-runner
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
+# nextonic:
+#   stage: nextonic
+#   image: curlimages/curl:8.18.0
+#   before_script:
+#     - sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_NAME|g" k8s/deployment.yaml
+#   script:
+#     - echo "Deploying to NEXTONIC"
+#     - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply -H "Authorization: Bearer $NEXTONIC_API_KEY" -H "Content-Type: application/yaml" --data-binary "@./k8s/deployment.yaml"'
+#   tags:
+#     - k8s-it6g-gitlab-runner
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main"'
+

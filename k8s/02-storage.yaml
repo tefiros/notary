@@ -4,7 +4,7 @@ metadata:
   name: ter-kafka-connect-connectors
   namespace: it6g
 spec:
-  storageClassName: longhorn
+  storageClassName: standard
   accessModes:
     - ReadWriteOnce
   resources:
@@ -17,7 +17,7 @@ metadata:
   name: ter-postgres-data
   namespace: it6g
 spec:
-  storageClassName: longhorn
+  storageClassName: standard
   accessModes:
     - ReadWriteOnce
   resources:
@@ -30,7 +30,7 @@ metadata:
   name: ter-kafka-data
   namespace: it6g
 spec:
-  storageClassName: longhorn
+  storageClassName: standard
   accessModes:
     - ReadWriteOnce
   resources:
