@@ -1,93 +1,262 @@
 # Notary
 
 
+# Deployment Guide
+ 
+Full event-driven stack deployed on Kubernetes. Includes Kafka, Schema Registry, Kafka Connect, PostgreSQL, PostgREST, and RabbitMQ.
+ 
+---
+ 
+## Architecture
+ 
+| Service | Internal DNS | External Port |
+|---|---|---|
+| Zookeeper | `zookeeper:2181` | — |
+| Kafka Broker | `broker:29092` (internal) | `localhost:30092` |
+| Schema Registry | `schema-registry:8081` | — |
+| Kafka Connect | `kafka-connect:8083` | — |
+| PostgreSQL | `postgres:5432` | — |
+| PostgREST | `postgrest:3000` | `localhost:30003` |
+| RabbitMQ AMQP | `rabbitmq:5672` | `localhost:30672` |
+| RabbitMQ UI | `rabbitmq:15672` | `localhost:30673` |
+ 
+---
 
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
+ 
+---
+ 
+## 1. Deploy the stack
+ 
+Apply manifests in order:
+ 
+```bash
+kubectl apply -f 00-namespace.yaml //if it6g is not already created
+kubectl apply -f 01-zookeeper.yaml
+kubectl apply -f 02-broker.yaml
+kubectl apply -f 03-schema-registry.yaml
+kubectl apply -f 04-kafka-connect.yaml
+kubectl apply -f 05-postgres.yaml
+kubectl apply -f 06-postgrest.yaml
+kubectl apply -f 08-rabbitmq.yaml
 ```
-cd existing_repo
-git remote add origin https://gitlab.eclipse.org/eclipse-research-labs/cybernemo-project/zero-trust-network-access/notaryZTNA.git
-git branch -M main
-git push -uf origin main
+ 
+Or apply the whole folder at once:
+```bash
+kubectl apply -f k8s/
+```
+ 
+Wait for all pods to be `Running`:
+```bash
+kubectl get pods -n it6g -w
+```
+ 
+> **Note:** `kafka-connect` takes 3–5 minutes on first start: the init container installs plugins (kafka-connect-jdbc, kafka-connect-transform-common, kafka-connect-rabbitmq).
+ 
+---
+
+ 
+## 2. Signer Service
+ 
+The signer service consumes from `test-topic`, signs each message and produces Avro records to `test-signed-topic`.
+ 
+Build and push the image - only for developer new settings:
+```bash
+docker build -t anamp26/signer-service-it6g:1.0.0 .
+docker push anamp26/signer-service-it6g:1.0.0
+```
+ 
+Deploy:
+```bash
+kubectl apply -f signer-service.yaml
+kubectl logs -n it6g deployment/signer-service -f
+```
+ 
+---
+ 
+## 3. Post-deployment configuration
+ 
+### 3.1 PostgreSQL — create `anon` role for PostgREST
+ 
+PostgREST requires an `anon` role to exist in PostgreSQL. Run once after first deploy:
+ 
+```bash
+kubectl exec -it -n kafka deployment/postgres -- \
+  psql -U postgres -c "CREATE ROLE anon NOLOGIN;"
+ 
+kubectl exec -it -n kafka deployment/postgres -- \
+  psql -U postgres -c "GRANT USAGE ON SCHEMA public TO anon; GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;"
 ```
 
-## Integrate with your tools
+ 
+---
+ 
+### 3.2 RabbitMQ — create input queue
+ 
+The RabbitMQ source connector expects the queue `q.input.test` to exist:
+ 
+```bash
+kubectl exec -it -n kafka deployment/rabbitmq -- \
+  rabbitmqadmin declare queue name=q.input.test durable=true \
+  --username=admin --password=admin
+```
+ 
+Or create it from the RabbitMQ UI at `http://localhost:30673` (admin/admin) → **Queues → Add a new queue**.
 
-- [ ] [Set up project integrations](https://gitlab.eclipse.org/eclipse-research-labs/cybernemo-project/zero-trust-network-access/notaryZTNA/-/settings/integrations)
+The produced messages through the RabbitMQ queue must be in JSON format.
+ 
+---
+ 
+### 3.3 Kafka Connect — register RabbitMQ source connector
+ 
+Find in folder k8s-connectors/  `rabbitproducer.json`:
+```json
+{
+  "name": "SOURCERABBIT",
+  "config": {
+    "connector.class": "io.confluent.connect.rabbitmq.RabbitMQSourceConnector",
+    "tasks.max": "1",
+    "kafka.topic": "test-topic",
+    "rabbitmq.host": "rabbitmq",
+    "rabbitmq.port": "5672",
+    "rabbitmq.username": "admin",
+    "rabbitmq.password": "admin",
+    "rabbitmq.virtual.host": "/",
+    "rabbitmq.queue": "q.input.test",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+    "confluent.topic.bootstrap.servers": "broker:29092",
+    "confluent.topic.replication.factor": "1",
+    "confluent.topic.partitions": "1",
+    "confluent.license.topic.replication.factor": "1"
+  }
+}
+```
+ 
+Post the connector:
+```bash
+kubectl exec -it -n kafka deployment/kafka-connect -- \
+  curl -X POST http://localhost:8083/connectors \
+  -H "Content-Type: application/json" \
+  -d @/dev/stdin < rabbitproducer.json
+```
+ 
+---
+ 
+### 3.4 Kafka Connect — register JDBC sink connector
+ 
+Find in folder k8s-connectors/  `sink-receipt.json`:
+```json
+{
+  "name": "SINK_RECEIPT",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+    "topics": "test-signed-topic",
+    "connection.url": "jdbc:postgresql://postgres:5432/postgres",
+    "connection.user": "postgres",
+    "connection.password": "postgres",
+    "key.converter": "io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url": "http://schema-registry:8081",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081",
+    "auto.create": "true",
+    "auto.evolve": "true",
+    "transforms": "InsertTS,CopyProducerId,InsertMeta",
+    "transforms.InsertTS.type": "org.apache.kafka.connect.transforms.InsertField$Value",
+    "transforms.InsertTS.timestamp.field": "ingest_ts",
+    "transforms.CopyProducerId.type": "com.github.jcustenborder.kafka.connect.transform.common.HeaderToField$Value",
+    "transforms.CopyProducerId.header.mappings": "producer_id:STRING",
+    "transforms.InsertMeta.type": "org.apache.kafka.connect.transforms.InsertField$Value",
+    "transforms.InsertMeta.offset.field": "kafka_offset",
+    "transforms.InsertMeta.partition.field": "kafka_partition",
+    "transforms.InsertMeta.topic.field": "kafka_topic"
+  }
+}
+```
+ 
+Post the connector:
+```bash
+kubectl exec -it -n kafka deployment/kafka-connect -- \
+  curl -X POST http://localhost:8083/connectors \
+  -H "Content-Type: application/json" \
+  -d @/dev/stdin < sink-receipt.json
+```
+ 
+---
+ 
+## 4. Verify everything is working
+ 
+### Check all pods
+```bash
+kubectl get pods -n it6g
+```
+ 
+### Check connector status
+```bash
+# RabbitMQ source
+kubectl exec -it -n kafka deployment/kafka-connect -- \
+  curl http://localhost:8083/connectors/SOURCERABBIT/status | python3 -m json.tool
+ 
+# JDBC sink
+kubectl exec -it -n kafka deployment/kafka-connect -- \
+  curl http://localhost:8083/connectors/SINK_RECEIPT/status | python3 -m json.tool
+```
+ 
+### Consume from a topic
+```bash
+kubectl exec -it -n kafka deployment/broker -- \
+  kafka-console-consumer \
+  --topic test-signed-topic \
+  --bootstrap-server localhost:29092 \
+  --from-beginning
+```
+ 
+### Check PostgreSQL table
+```bash
+kubectl exec -it -n kafka deployment/postgres -- \
+  psql -U postgres -c "SELECT * FROM \"test-signed-topic\";"
+```
+ 
+### Query via PostgREST
+```bash
+curl http://localhost:30003/test-signed-topic
+```
+ 
+---
 
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+ 
+## 5. Message flow
+ 
+```
+RabbitMQ (q.input.test)
+    → [SOURCERABBIT connector]
+    → Kafka topic: test-topic
+    → [Signer Service]
+    → Kafka topic: test-signed-topic (Avro)
+    → [SINK_RECEIPT connector]
+    → PostgreSQL table: test-signed-topic
+    → [PostgREST]
+    → HTTP API: localhost:30003/test-signed-topic
+```
 
 ## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Telefónica - Ana Méndez
 
 ## License
-For open source projects, say how it is licensed.
+This project is licensed under the Apache License, Version 2.0.
+Copyright 2025 TID
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at:
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
 ## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+The code has been tested on local Kubernetes cluster. Contact developer for integration adjustments.

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: signer-service
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: signer-service
+  template:
+    metadata:
+      labels:
+        app: signer-service
+    spec:
+      containers:
+        - name: signer-service
+          image: anamp26/signer-service-it6g:1.0.0
+          imagePullPolicy: Always

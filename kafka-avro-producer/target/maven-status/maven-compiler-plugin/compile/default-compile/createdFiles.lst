@@ -1,7 +1,10 @@
+com/example/OutputRabbit.class
 com/example/App.class
 example/avro/FooRecord$Builder.class
 example/avro/FooRecord.class
+com/example/ReceiptAppImage.class
 example/avro/ReceiptRecord$Builder.class
 com/example/ReceiptApp.class
 com/example/Signer.class
+com/example/ProducerApp.class
 example/avro/ReceiptRecord.class

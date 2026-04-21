@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-connect
+  namespace: it6g
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-connect
+  template:
+    metadata:
+      labels:
+        app: kafka-connect
+    spec:
+      volumes:
+        - name: connectors
+          emptyDir: {}
+      initContainers:
+        - name: install-plugins
+          image: confluentinc/cp-kafka-connect:6.1.0
+          command:
+            - bash
+            - -c
+            - |
+              confluent-hub install --no-prompt jcustenborder/kafka-connect-transform-common:latest --component-dir /connectors
+              confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.0.0 --component-dir /connectors
+              confluent-hub install --no-prompt confluentinc/kafka-connect-rabbitmq:1.7.0 --component-dir /connectors
+          volumeMounts:
+            - name: connectors
+              mountPath: /connectors
+      containers:
+        - name: kafka-connect
+          image: confluentinc/cp-kafka-connect:6.1.0
+          ports:
+            - containerPort: 8083
+          volumeMounts:
+            - name: connectors
+              mountPath: /connectors
+          env:
+            - name: CONNECT_BOOTSTRAP_SERVERS
+              value: "broker:29092"
+            - name: CONNECT_REST_ADVERTISED_HOST_NAME
+              value: "kafka-connect"
+            - name: CONNECT_REST_PORT
+              value: "8083"
+            - name: CONNECT_GROUP_ID
+              value: "kafka-connect"
+            - name: CONNECT_CONFIG_STORAGE_TOPIC
+              value: "_kafka-connect-configs"
+            - name: CONNECT_OFFSET_STORAGE_TOPIC
+              value: "_kafka-connect-offsets"
+            - name: CONNECT_STATUS_STORAGE_TOPIC
+              value: "_kafka-connect-status"
+            - name: CONNECT_KEY_CONVERTER
+              value: "io.confluent.connect.avro.AvroConverter"
+            - name: CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL
+              value: "http://schema-registry:8081"
+            - name: CONNECT_VALUE_CONVERTER
+              value: "io.confluent.connect.avro.AvroConverter"
+            - name: CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL
+              value: "http://schema-registry:8081"
+            - name: CONNECT_LOG4J_ROOT_LOGLEVEL
+              value: "INFO"
+            - name: CONNECT_LOG4J_LOGGERS
+              value: "org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR"
+            - name: CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR
+              value: "1"
+            - name: CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR
+              value: "1"
+            - name: CONNECT_STATUS_STORAGE_REPLICATION_FACTOR
+              value: "1"
+            - name: CONNECT_PLUGIN_PATH
+              value: "/usr/share/java,/usr/share/confluent-hub-components/,/connectors/"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-connect
+  namespace: it6g
+spec:
+  selector:
+    app: kafka-connect
+  ports:
+    - port: 8083
+      targetPort: 8083
