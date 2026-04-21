@@ -1,10 +1,8 @@
 # Notary
 
-
 # Deployment Guide
  
 Full event-driven stack deployed on Kubernetes. Includes Kafka, Schema Registry, Kafka Connect, PostgreSQL, PostgREST, and RabbitMQ.
- 
 ---
  
 ## Architecture
@@ -59,11 +57,6 @@ kubectl get pods -n it6g -w
  
 The signer service consumes from `test-topic`, signs each message and produces Avro records to `test-signed-topic`.
  
-Build and push the image - only for developer new settings:
-```bash
-docker build -t anamp26/signer-service-it6g:1.0.0 .
-docker push anamp26/signer-service-it6g:1.0.0
-```
  
 Deploy:
 ```bash
