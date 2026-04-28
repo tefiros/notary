@@ -14,7 +14,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: kafka
+  namespace: it6g
 spec:
   replicas: 1
   selector:
