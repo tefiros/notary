@@ -147,16 +147,16 @@ nextonic:
     - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
         -H "Authorization: Bearer $NEXTONIC_API_KEY"
         -H "Content-Type: application/yaml"
-        --data-binary "@./k8s/06-postgres.yaml"'
+        --data-binary "@./k8s/05-postgres.yaml"'
     - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
         -H "Authorization: Bearer $NEXTONIC_API_KEY"
         -H "Content-Type: application/yaml"
-        --data-binary "@./k8s/07-postgrest.yaml"'
+        --data-binary "@./k8s/06-postgrest.yaml"'
     - echo "Deploying signer-service to NEXTONIC"
     - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
         -H "Authorization: Bearer $NEXTONIC_API_KEY"
         -H "Content-Type: application/yaml"
-        --data-binary "@./k8s/signer-service-it6g.yaml"'
+        --data-binary "@./k8s/signer-service.yaml"'
   tags:
     - k8s-it6g-gitlab-runner
   rules:
