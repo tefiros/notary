@@ -1,8 +1,8 @@
 stages:
   # - build
-  # - deploy
+  - deploy
   # - configure
-  - nextonic
+  # - nextonic
 
 variables:
   REGISTRY_URL: registry.pdmfc.com
@@ -10,7 +10,7 @@ variables:
   IMAGE_NAME: anamp26/signer-service-it6g:latest
 
 # ---------------------------------------------------------------
-# BUILD — builds the Docker image and pushes it to the registry
+# BUILD — builds the Docker image and pushes it to the registry NOT NEEDED
 # ---------------------------------------------------------------
 #build:
 #  stage: build
@@ -31,37 +31,29 @@ variables:
 # ---------------------------------------------------------------
 # DEPLOY — applies all k8s manifests
 # ---------------------------------------------------------------
-#deploy:
-#  stage: deploy
-#  image: $PUB_REGISTRY_URL/pdm/kubectl-with-bash:1.33.1
-#  before_script:
-#    - mkdir -p /tmp
-#    - echo "$KUBECONFIG_DATA" | base64 -d > /tmp/kubeconfig
-#    - chmod 600 /tmp/kubeconfig
-#    - export KUBECONFIG=/tmp/kubeconfig
-#    - sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_NAME|g" k8s/signer-service.yaml
-#  script:
-#    - echo "Deploying kafka stack to selected namespace"
-#    - kubectl apply -f k8s/00-namespace.yaml
-#    - kubectl apply -f k8s/01-zookeeper.yaml
-#    - kubectl apply -f k8s/02-broker.yaml
-#    - kubectl apply -f k8s/03-schema-registry.yaml
-#    - kubectl apply -f k8s/04-kafka-connect.yaml
-#    - kubectl apply -f k8s/06-postgres.yaml
-#    - kubectl apply -f k8s/07-postgrest.yaml
-#    - kubectl apply -f k8s/08-rabbitmq.yaml
-#    - echo "Deploying signer-service to namespace it6g"
-#    #    - kubectl create namespace it6g --dry-run=client -o yaml | kubectl apply -f -
-#    - kubectl apply -f k8s/signer-service-it6g.yaml
-#    - kubectl -n it6g rollout restart deployment/signer-service
-#    - kubectl -n it6g rollout status deployment/signer-service --timeout=300s
-#    - echo "Waiting for kafka-connect to be ready"
-#    - kubectl -n kafka rollout status deployment/kafka-connect --timeout=300s
-#  tags:
-#    - k8s-it6g-gitlab-runner
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master"'
-#
+deploy:
+  stage: deploy
+  image: $PUB_REGISTRY_URL/pdm/kubectl-with-bash:1.33.1
+  before_script:
+    - mkdir -p /tmp
+    - echo "$KUBECONFIG_DATA" | base64 -d > /tmp/kubeconfig
+    - chmod 600 /tmp/kubeconfig
+    - export KUBECONFIG=/tmp/kubeconfig
+    - sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_NAME|g" k8s/signer-service.yaml
+  script:
+    - echo "Deploying kafka stack to selected namespace"
+    - kubectl apply -f k8s/01-zookeeper.yaml
+    - kubectl apply -f k8s/02-broker.yaml
+    - kubectl apply -f k8s/03-schema-registry.yaml
+    - kubectl apply -f k8s/04-kafka-connect.yaml
+    - kubectl apply -f k8s/05-postgres.yaml
+    - kubectl apply -f k8s/06-postgrest.yaml
+    - kubectl apply -f k8s/signer-service.yaml
+  tags:
+    - k8s-it6g-gitlab-runner
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
 ## ---------------------------------------------------------------
 ## CONFIGURE — registers Kafka Connect connectors via REST API
 ## Skips registration if connector already exists
@@ -123,42 +115,42 @@ variables:
 # ---------------------------------------------------------------
 # NEXTONIC — deploys signer-service to the Nextonic environment
 # ---------------------------------------------------------------
-nextonic:
-  stage: nextonic
-  image: curlimages/curl:8.18.0
-  script:
-    - echo "Deploying kafka stack to NEXTONIC"
-    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
-        -H "Authorization: Bearer $NEXTONIC_API_KEY"
-        -H "Content-Type: application/yaml"
-        --data-binary "@./k8s/01-zookeeper.yaml"'
-    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
-        -H "Authorization: Bearer $NEXTONIC_API_KEY"
-        -H "Content-Type: application/yaml"
-        --data-binary "@./k8s/02-broker.yaml"'
-    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
-        -H "Authorization: Bearer $NEXTONIC_API_KEY"
-        -H "Content-Type: application/yaml"
-        --data-binary "@./k8s/03-schema-registry.yaml"'
-    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
-        -H "Authorization: Bearer $NEXTONIC_API_KEY"
-        -H "Content-Type: application/yaml"
-        --data-binary "@./k8s/04-kafka-connect.yaml"'
-    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
-        -H "Authorization: Bearer $NEXTONIC_API_KEY"
-        -H "Content-Type: application/yaml"
-        --data-binary "@./k8s/05-postgres.yaml"'
-    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
-        -H "Authorization: Bearer $NEXTONIC_API_KEY"
-        -H "Content-Type: application/yaml"
-        --data-binary "@./k8s/06-postgrest.yaml"'
-    - echo "Deploying signer-service to NEXTONIC"
-    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
-        -H "Authorization: Bearer $NEXTONIC_API_KEY"
-        -H "Content-Type: application/yaml"
-        --data-binary "@./k8s/signer-service.yaml"'
-  tags:
-    - k8s-it6g-gitlab-runner
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
- 
+#nextonic:
+#  stage: nextonic
+#  image: curlimages/curl:8.18.0
+#  script:
+#    - echo "Deploying kafka stack to NEXTONIC"
+#    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
+#        -H "Authorization: Bearer $NEXTONIC_API_KEY"
+#        -H "Content-Type: application/yaml"
+#        --data-binary "@./k8s/01-zookeeper.yaml"'
+#    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
+#        -H "Authorization: Bearer $NEXTONIC_API_KEY"
+#        -H "Content-Type: application/yaml"
+#        --data-binary "@./k8s/02-broker.yaml"'
+#    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
+#        -H "Authorization: Bearer $NEXTONIC_API_KEY"
+#        -H "Content-Type: application/yaml"
+#        --data-binary "@./k8s/03-schema-registry.yaml"'
+#    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
+#        -H "Authorization: Bearer $NEXTONIC_API_KEY"
+#        -H "Content-Type: application/yaml"
+#        --data-binary "@./k8s/04-kafka-connect.yaml"'
+#    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
+#        -H "Authorization: Bearer $NEXTONIC_API_KEY"
+#        -H "Content-Type: application/yaml"
+#        --data-binary "@./k8s/05-postgres.yaml"'
+#    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
+#        -H "Authorization: Bearer $NEXTONIC_API_KEY"
+#        -H "Content-Type: application/yaml"
+#        --data-binary "@./k8s/06-postgrest.yaml"'
+#    - echo "Deploying signer-service to NEXTONIC"
+#    - 'curl --fail-with-body -sS -X POST https://ip.sns-itrust6g.com/api/kubernetes/it6g/apply
+#        -H "Authorization: Bearer $NEXTONIC_API_KEY"
+#        -H "Content-Type: application/yaml"
+#        --data-binary "@./k8s/signer-service.yaml"'
+#  tags:
+#    - k8s-it6g-gitlab-runner
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "master"'
+#
