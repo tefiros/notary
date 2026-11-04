@@ -10,8 +10,21 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Arrays;
+
 
 public class ReceiptAppItrust {
+
+    private static final Map<String, String> TOPIC_MAP;
+    static {
+        TOPIC_MAP = new HashMap<>();
+        TOPIC_MAP.put("test-topic",     "test-signed-topic");
+        TOPIC_MAP.put("aite-evidences", "aite-signed-evidences");
+        TOPIC_MAP.put("rae-evidences",  "rae-signed-evidences");
+    }
+
     public static void main(String[] args) throws Exception {
 
         // Consumer
@@ -22,7 +35,7 @@ public class ReceiptAppItrust {
         consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps);
-        consumer.subscribe(Collections.singletonList("test-topic"));
+        consumer.subscribe(Arrays.asList("test-topic", "aite-evidences", "rae-evidences"));
 
         // Producer
         Properties props = new Properties();
@@ -35,13 +48,20 @@ public class ReceiptAppItrust {
 
         Signer signer = new Signer();
 
-        System.out.println("Esperando mensajes en test-topic...");
+        System.out.println("Esperando mensajes en: " + TOPIC_MAP.keySet());
 
         try {
             while (true) {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
 
                 for (ConsumerRecord<String, String> record : records) {
+
+                    String outputTopic = TOPIC_MAP.get(record.topic());
+                    if (outputTopic == null) {
+                        System.out.println("Topic desconocido ignorado: " + record.topic());
+                        continue;
+                    }
+
                     String jsonContent = record.value();
                     String signature = signer.sign(jsonContent);
 
@@ -53,7 +73,7 @@ public class ReceiptAppItrust {
 
                     // Crear ProducerRecord con key tipo String
                     ProducerRecord<String, ReceiptRecord> newRecord =
-                            new ProducerRecord<>("test-signed-topic", null, receipt);
+                            new ProducerRecord<>(outputTopic, record.key(), receipt);
 
                     // Copiar el header producer_id si existe
                     if (record.headers().lastHeader("producer_id") != null) {
@@ -65,8 +85,9 @@ public class ReceiptAppItrust {
 
                     producer.send(newRecord, (metadata, exception) -> {
                         if (exception == null) {
-                            System.out.printf("Enviado a topic=%s partition=%d offset=%d%n",
-                                    metadata.topic(), metadata.partition(), metadata.offset());
+                            System.out.printf("[%s -> %s] partition=%d offset=%d%n",
+                                    record.topic(), metadata.topic(),
+                                    metadata.partition(), metadata.offset());
                         } else {
                             exception.printStackTrace();
                         }

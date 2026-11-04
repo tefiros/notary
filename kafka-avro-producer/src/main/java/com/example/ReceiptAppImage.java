@@ -10,8 +10,19 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Arrays;
 
 public class ReceiptAppImage {
+
+    private static final Map<String, String> TOPIC_MAP;
+    static {
+        TOPIC_MAP = new HashMap<>();
+        TOPIC_MAP.put("ztna.ws.cybernemo-onelab.measures", "ztna.ws.cybernemo-onelab.measures.signed");
+        TOPIC_MAP.put("ztna.nada.cybernemo-onelab.anomalies",  "ztna.nada.cybernemo-onelab.anomalies.signed");
+    }
+
     public static void main(String[] args) throws Exception {
 
         //Consumer
@@ -22,7 +33,7 @@ public class ReceiptAppImage {
         consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps);
-        consumer.subscribe(Collections.singletonList("producer-notary-test-topic"));
+        consumer.subscribe(Arrays.asList("ztna.ws.cybernemo-onelab.measures", "ztna.nada.cybernemo-onelab.anomalies"));
 
 
         // Producer
@@ -36,7 +47,7 @@ public class ReceiptAppImage {
 
         Signer signer = new Signer();
 
-        System.out.println("Esperando mensajes en producer-notary-test-topic...");
+        System.out.println("Esperando mensajes en: " + TOPIC_MAP.keySet());
 
         try {
             while (true) {
@@ -44,6 +55,13 @@ public class ReceiptAppImage {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
 
                 for (ConsumerRecord<String, String> record : records) {
+
+                    String outputTopic = TOPIC_MAP.get(record.topic());
+                    if (outputTopic == null) {
+                        System.out.println("Topic desconocido ignorado: " + record.topic());
+                        continue;
+                    }
+
                     String jsonContent = record.value();
                     String signature = signer.sign(jsonContent);
 
@@ -55,7 +73,7 @@ public class ReceiptAppImage {
 
                     // Crear ProducerRecord con key tipo String
                     ProducerRecord<String, ReceiptRecord> newRecord =
-                            new ProducerRecord<>("ztna.ws.receipt.test", null, receipt);
+                            new ProducerRecord<>(outputTopic, record.key(), receipt);
 
                     // Copiar el header producer_id si existe
                     if (record.headers().lastHeader("producer_id") != null) {
