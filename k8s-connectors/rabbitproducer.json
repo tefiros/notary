@@ -1,0 +1,25 @@
+{
+  "name": "SOURCERABBIT",
+  "config": {
+    "connector.class": "io.confluent.connect.rabbitmq.RabbitMQSourceConnector",
+    "tasks.max": "1",
+
+    "kafka.topic": "test-topic",
+
+    "rabbitmq.host": "rabbitmq",
+    "rabbitmq.port": "5672",
+    "rabbitmq.username": "admin",
+    "rabbitmq.password": "admin",
+    "rabbitmq.virtual.host": "/",
+    "rabbitmq.queue": "q.input.test",
+
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+
+    "confluent.topic.bootstrap.servers": "broker:29092",
+    "confluent.topic.replication.factor": "1",
+    "confluent.topic.partitions": "1",
+    "confluent.license.topic.replication.factor": "1"
+  }
+}
+

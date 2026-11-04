@@ -129,21 +129,6 @@ services:
       KSQL_KSQL_SERVICE_ID: confluent_rmoff_01
       KSQL_KSQL_HIDDEN_TOPICS: '^_.*'
 
-  # mysql:
-  #   # *-----------------------------*
-  #   # To connect to the DB:
-  #   #   docker exec -it mysql bash -c 'mysql -u root -p$MYSQL_ROOT_PASSWORD'
-  #   # *-----------------------------*
-  #   image: mysql:8.0
-  #   container_name: mysql
-  #   ports:
-  #     - 3306:3306
-  #   environment:
-  #    - MYSQL_ROOT_PASSWORD=Admin123
-  #    - MYSQL_USER=connect_user
-  #    - MYSQL_PASSWORD=asgard
-  #   volumes:
-  #    - ./data/mysql:/docker-entrypoint-initdb.d/
 
 
   postgres:
@@ -173,15 +158,15 @@ services:
       PGRST_DB_SCHEMA: "public"
       PGRST_DB_ANON_ROLE: "anon"
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"     # Puerto AMQP para conectar clientes
-      - "15672:15672"   # Consola web de RabbitMQ
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   container_name: rabbitmq
+  #   ports:
+  #     - "5672:5672"     # Puerto AMQP para conectar clientes
+  #     - "15672:15672"   # Consola web de RabbitMQ
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: guest
+  #     RABBITMQ_DEFAULT_PASS: guest
 
 
 # kafkacat:

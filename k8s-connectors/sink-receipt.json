@@ -1,0 +1,25 @@
+{
+  "name": "SINK_RECEIPT",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+    "topics": "test-signed-topic",
+    "connection.url": "jdbc:postgresql://postgres:5432/postgres",
+    "connection.user": "postgres",
+    "connection.password": "postgres",
+    "key.converter": "io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url": "http://schema-registry:8081",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081",
+    "auto.create": "true",
+    "transforms": "InsertTS,CopyProducerId, InsertMeta",
+    "transforms.InsertTS.type": "org.apache.kafka.connect.transforms.InsertField$Value",
+    "transforms.InsertTS.timestamp.field": "ingest_ts",
+    "transforms.CopyProducerId.type": "com.github.jcustenborder.kafka.connect.transform.common.HeaderToField$Value",
+    "transforms.CopyProducerId.header.mappings": "producer_id:STRING",
+    "transforms.InsertMeta.type": "org.apache.kafka.connect.transforms.InsertField$Value",
+    "transforms.InsertMeta.offset.field": "kafka_offset",
+    "transforms.InsertMeta.partition.field": "kafka_partition",
+    "transforms.InsertMeta.topic.field": "kafka_topic"
+  }
+}
